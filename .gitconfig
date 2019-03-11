@@ -1,0 +1,11 @@
+[core]
+	editor = nano
+[user]
+	email = joao.pedro.pacheco@hotmail.com
+	name = jp
+[alias]
+	co = checkout
+	br = branch
+	ci = commit
+	st = status
+	last = log -3 HEAD
