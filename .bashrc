@@ -94,13 +94,6 @@ alias ll='ls -l'
 alias la='ls -A'
 alias l='ls -CF'
 
-# some personal aliases
-alias left='xsetwacom set "Wacom Bamboo 16FG 4x5 Pen stylus" rotate half'
-alias frx=''/home/jp/.firefox/firefox''
-alias slsk=''/home/jp/.slsk/SoulseekQt''
-alias audio=''/home/jp/.lmms/lmms.appimage''
-alias prjs='cd /home/jp/.prjs'
-
 # Alias definitions.
 # You may want to put all your additions into a separate file like
 # ~/.bash_aliases, instead of adding them here directly.
@@ -121,7 +114,16 @@ if ! shopt -oq posix; then
   fi
 fi
 
+
 # DEV TOOLS
+
+# some personal aliases
+alias left='xsetwacom set "Wacom Bamboo 16FG 4x5 Pen stylus" rotate half'
+alias frx=''/home/jp/.firefox/firefox''
+alias slsk=''/home/jp/.slsk/SoulseekQt''
+alias audio=''/home/jp/.lmms/lmms.appimage''
+alias prjs='cd /home/jp/.prjs'
+
 # export nvm dir:
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm

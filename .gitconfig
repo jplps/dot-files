@@ -1,8 +1,10 @@
-[core]
-	editor = nano
 [user]
 	email = joao.pedro.pacheco@hotmail.com
 	name = jp
+
+[core]
+	editor = nano
+
 [alias]
 	co = checkout
 	br = branch
