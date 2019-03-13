@@ -115,14 +115,22 @@ if ! shopt -oq posix; then
 fi
 
 
+#				   __,
+# -- THIS PART IS A HACKK DUUDE __/ (__ YEHAW --
+
+
 # DEV TOOLS
 
 # some personal aliases
+# Flip wacom to left handed freaks:
 alias left='xsetwacom set "Wacom Bamboo 16FG 4x5 Pen stylus" rotate half'
+# Shortcuts:
 alias frx=''/home/jp/.firefox/firefox''
 alias slsk=''/home/jp/.slsk/SoulseekQt''
 alias audio=''/home/jp/.lmms/lmms.appimage''
 alias prjs='cd /home/jp/.prjs'
+# Scan the wifi list using nmcli (debian-based):
+alias wscan='nmcli dev wifi list'
 
 # export nvm dir:
 export NVM_DIR="$HOME/.nvm"
