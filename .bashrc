@@ -2,7 +2,8 @@
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
 
-# THIS IS NOT THE TRUE FILE! BE CAREFULL! author: @LPS/PGA
+# THIS IS NOT THE TRUE FILE! BE CAREFULL!
+# author: LPS4d
 
 # If not running interactively, don't do anything
 case $- in
@@ -115,22 +116,24 @@ if ! shopt -oq posix; then
 fi
 
 
-#				   __,
-# -- THIS PART IS A HACKK DUUDE __/ (__ YEHAW --
+#				   ---,
+# -- THIS PART IS A HACKK DUUDE __/ (__ YEHAW! |m|, --
 #
 
 # DEV TOOLS
 
 # some personal aliases
-# Flip wacom to left handed freaks:
+# flip wacom to left handed freaks:
 alias left='xsetwacom set "Wacom Bamboo 16FG 4x5 Pen stylus" rotate half'
-# Shortcuts:
+# shortcuts:
 alias frx=''/home/jp/.firefox/firefox''
 alias slsk=''/home/jp/.slsk/SoulseekQt''
 alias audio=''/home/jp/.lmms/lmms.appimage''
 alias prjs='cd /home/jp/.prjs'
-# Scan the wifi list using nmcli (debian-based):
+# scan the wifi list using nmcli (debian-based):
 alias wscan='nmcli dev wifi list'
+# clean history
+alias cleanh='sudo rm -r ~/.bash_history'
 
 # export nvm dir:
 export NVM_DIR="$HOME/.nvm"
