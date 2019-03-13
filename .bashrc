@@ -129,6 +129,7 @@ alias frx=''/home/jp/.firefox/firefox''
 alias slsk=''/home/jp/.slsk/SoulseekQt''
 alias audio=''/home/jp/.lmms/lmms.appimage''
 alias prjs='cd /home/jp/.prjs'
+alias clearh='sudo rm -r ~/.bash_history'
 # Scan the wifi list using nmcli (debian-based):
 alias wscan='nmcli dev wifi list'
 
