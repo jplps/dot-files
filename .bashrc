@@ -117,7 +117,7 @@ fi
 
 #				   __,
 # -- THIS PART IS A HACKK DUUDE __/ (__ YEHAW --
-
+#
 
 # DEV TOOLS
 
@@ -129,7 +129,6 @@ alias frx=''/home/jp/.firefox/firefox''
 alias slsk=''/home/jp/.slsk/SoulseekQt''
 alias audio=''/home/jp/.lmms/lmms.appimage''
 alias prjs='cd /home/jp/.prjs'
-alias clearh='sudo rm -r ~/.bash_history'
 # Scan the wifi list using nmcli (debian-based):
 alias wscan='nmcli dev wifi list'
 
@@ -186,5 +185,5 @@ function parse_git_dirty {
 	fi
 }
 
-# export promp with git functions, green $ and yellow info:
+# export promp with git functions, and yellow info:
 export PS1="${debian_chroot:+($debian_chroot)} ⚓\[\033[01;32m\]\u@\h\[\033[00m\] \[\033[01;34m\]\w\[\033[33m\]\`parse_git_branch\`\[\033[01;00m\] \$ "
