@@ -16,11 +16,6 @@ alias wscan='nmcli dev wifi list'
 # clean history
 alias cleanh='sudo rm -r ~/.bash_history'
 
-# export nvm dir:
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
 # GIT TOOLS
 # get current branch in git repo
 function parse_git_branch() {
