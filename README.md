@@ -2,9 +2,9 @@
 
 Files and/or directories with a . prepended to their name are considered "dot-files". The leading dot . is used as an indicator by software like bash and nautilus to not list these files normally but only when they are specifically requested like pressing Ctrl+H in explorers for example. 
 
-Dot-files are used to store configurations for different applications but they are sometimes used otherwise.
+Dot-files are used to store configurations for different applications but they are sometimes used otherwise. 
 
-People tend to backup & also share their dot-files so others can boot-strap their own applications using those configuration files. An example of a site dedicated to sharing dot-files is http://dotfiles.org.
+People tend to backup & also share their dot-files so others can boot-strap their own applications using those configuration files.
 
 ### .bash_aliases
 
