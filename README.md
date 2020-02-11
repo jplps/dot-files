@@ -16,16 +16,19 @@ Basic global configurations for the git program. Contains few variable definitio
 
 ### .jobs
 
-	sudo systemctl status cron.service
-	cd ..
-	las
-	mkdir .jobs
-	cd .jobs/
-	las
-	nano reboot.sh
+The directory .jobs has a special task. It keeps the bash scripts that will be runned by cron (research for cron jobs). Cron is a time-based job scheduler in Unix-like computer operating systems, see man cron for documentation.
+
+Let's say we want pm2 (https://pm2.keymetrics.io/) to start our npm project whenever the server system reboots.
+
+In your home folder:
+
+	sudo systemctl status cron.service (see if the daemon is running)
+	mkdir .jobs && cd .jobs/
+	touch reboot.sh
 	crontab -e
+		\*This opens the cron file and you will have to insert the following rule to cron knows what script to execute on reboot:
+		@reboot /home/admin/.jobs/reboot.sh
 	update-rc.d cron defaults
-	crontab -e
-	crontab -l
+	
 
 @LPS
