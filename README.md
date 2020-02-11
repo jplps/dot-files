@@ -14,4 +14,18 @@ Global bash (terminal) configurations aliases. Contains aliases, git tools and p
 
 Basic global configurations for the git program. Contains few variable definitions.
 
+### .jobs
+
+	sudo systemctl status cron.service
+	cd ..
+	las
+	mkdir .jobs
+	cd .jobs/
+	las
+	nano reboot.sh
+	crontab -e
+	update-rc.d cron defaults
+	crontab -e
+	crontab -l
+
 @LPS
