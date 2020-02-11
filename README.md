@@ -22,13 +22,13 @@ Let's say we want pm2 (https://pm2.keymetrics.io/) to start our npm project when
 
 In your home folder:
 
-	sudo systemctl status cron.service (see if the daemon is running)
-	mkdir .jobs && cd .jobs/
-	touch reboot.sh
-	crontab -e
+	$ sudo systemctl status cron.service (see if the daemon is running)
+	$ mkdir .jobs && cd .jobs/
+	$ touch reboot.sh
+	$ crontab -e
 		\*This opens the cron file and you will have to insert the following rule to cron knows what script to execute on reboot:
 		@reboot /home/admin/.jobs/reboot.sh
-	update-rc.d cron defaults
-	
+	$ update-rc.d cron defaults
+
 
 @LPS
