@@ -16,9 +16,9 @@ One can store aliases that will be executed in the .bash_aliases, and, in this c
 
 Global bash (terminal, or cli - command line interface) aliases files.
 
-### .bash_profile
+### .profile
 
-Contains git parsers to gather data from the repo, and a prompt-export to show things differently.
+Contains git parsers to gather data from the branches, and a prompt-export to show things differently.
 
 Note: ~/.bash_profile is only sourced by bash when started in interactive login mode (when you login at the console, or connecting via ssh).
 
