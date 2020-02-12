@@ -8,17 +8,17 @@ People tend to backup & also share their dot-files so others can boot-strap thei
 
 ### .bash_aliases
 
-Global bash (terminal) configurations aliases. Contains aliases, git tools and prompt-export.
+Global bash (terminal, or cli - command line interface) configurations aliases. Contains aliases, git tools and a prompt-export to show things differently.
 
 ### .gitconfig
 
-Basic global configurations for the git program. Contains few variable definitions.
+Basic global configurations for the git program. Contains few variable definitions. See https://git-scm.com/docs/git-config.
 
 ### .jobs
 
-The directory .jobs has a special task. It keeps the bash scripts that will be runned by cron (research for cron jobs). Cron is a time-based job scheduler in Unix-like computer operating systems, see man cron for documentation.
+The directory .jobs has a special task. It keeps the bash scripts that will be runned by cron. Cron is a time-based job scheduler in Unix-like computer operating systems, execute 'man cron' in your terminal for documentation.
 
-Let's say we want pm2 (https://pm2.keymetrics.io/) to start our npm project whenever the server system reboots.
+Let's say we want pm2 (https://pm2.keymetrics.io/) to start our npm project whenever the server system reboots. That's a simple command executed by bash that goes into reboot.sh (pm2 start npm -- start).
 
 In your home folder:
 
