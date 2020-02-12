@@ -2,7 +2,6 @@
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
 
-# ALIASES
 # flip wacom to left handed freaks:
 alias left='xsetwacom set "Wacom Bamboo 16FG 4x5 Pen stylus" rotate half'
 
