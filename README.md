@@ -6,9 +6,21 @@ Dot-files are used to store configurations for different applications but they a
 
 People tend to backup & also share their dot-files so others can boot-strap their own applications using those configuration files. Please refer to https://dotfiles.github.io/ and build your own!
 
+## Bash
+
+When the shell is executed, there are initialization files it reads which help to setup an environment for itself, and the system user, that are predefined - and customized - functions, variables, aliases and so on.
+
+One can store aliases that will be executed in the .bash_aliases, and, in this case, a .profile file because there isn't a ~/.bash_profile or ~/.bash_login.
+
 ### .bash_aliases
 
-Global bash (terminal, or cli - command line interface) configurations aliases. Contains aliases, git tools and a prompt-export to show things differently.
+Global bash (terminal, or cli - command line interface) aliases files.
+
+### .profile
+
+Contains git parsers to gather data from  and a prompt-export to show things differently.
+
+## Git
 
 ### .gitconfig
 
