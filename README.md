@@ -16,9 +16,15 @@ One can store aliases that will be executed in the .bash_aliases, and, in this c
 
 Global bash (terminal, or cli - command line interface) aliases files.
 
-### .profile
+### .bash_profile
 
 Contains git parsers to gather data from the repo, and a prompt-export to show things differently.
+
+Note: ~/.bash_profile is only sourced by bash when started in interactive login mode (when you login at the console, or connecting via ssh).
+
+When you log in graphically, ~/.profile will be specifically sourced by the script that launches the graphic session (the desktop env). So ~/.bash_profile is not sourced at all.
+
+When you open a terminal, it starts bash in non-login interactive mode, which means it will source ~/.bashrc. This effect with .profile should be apparent next time you log in.
 
 ## Git
 ### .gitconfig
@@ -41,6 +47,5 @@ In your home folder:
 		\*This opens the cron file and you will have to insert the following rule to cron knows what script to execute on reboot:
 		@reboot /home/admin/.jobs/reboot.sh
 	$ update-rc.d cron defaults
-
 
 @LPS
