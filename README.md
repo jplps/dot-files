@@ -18,14 +18,14 @@ Global bash (terminal, or cli - command line interface) aliases files.
 
 ### .profile
 
-Contains git parsers to gather data from  and a prompt-export to show things differently.
+Contains git parsers to gather data from the repo, and a prompt-export to show things differently.
 
 ## Git
-
 ### .gitconfig
 
 Basic global configurations for the git program. Contains few variable definitions. See https://git-scm.com/docs/git-config.
 
+## Cron
 ### .jobs
 
 The directory .jobs has a special task. It keeps the bash scripts that will be runned by cron. Cron is a time-based job scheduler in Unix-like computer operating systems, execute 'man cron' in your terminal for documentation.
