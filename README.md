@@ -1,6 +1,6 @@
 # Dot Files
 
-Files and/or directories with a . prepended to their name are considered "dot-files". The leading dot . is used as an indicator by software like bash and nautilus to not list these files normally but only when they are specifically requested like pressing Ctrl+H in explorers for example. 
+Files and/or directories with a "." prepended to their name are considered "dot-files". The leading dot is used as an indicator by software like bash and nautilus to not list these files normally, but only when they are specifically requested like pressing Ctrl+H in explorers for example. They are hidden by default.
 
 Dot-files are used to store configurations for different applications but they are sometimes used otherwise. 
 
