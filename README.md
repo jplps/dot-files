@@ -10,7 +10,7 @@ People tend to backup & also share their dot-files so others can boot-strap thei
 
 When the shell is executed, there are initialization files it reads which help to setup an environment for itself, and the system user, that are predefined - and customized - functions, variables, aliases and so on.
 
-One can store aliases that will be executed in the .bash_aliases, and, in this case, a .profile file because there isn't a ~/.bash_profile or ~/.bash_login.
+One can store aliases that will be executed in the .bash_aliases, and, in this case, a .profile file.
 
 ### .bash_aliases
 
