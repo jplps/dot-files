@@ -24,14 +24,10 @@ Contains git parsers to gather data from the branches, and a prompt-export to sh
 
 Global bash (terminal, or cli - command line interface) aliases files called from the .bashrc file.
 
-----
-
 ## Git
 ### .gitconfig
 
 Basic global configurations for the git program. Contains few variable definitions. See https://git-scm.com/docs/git-config.
-
-----
 
 ## Cron
 ### .jobs
@@ -49,5 +45,3 @@ In your home folder:
 		\*This opens the cron file and you will have to insert the following rule to cron knows what script to execute on reboot:
 		@reboot /home/admin/.jobs/reboot.sh
 	$ update-rc.d cron defaults
-
-----
