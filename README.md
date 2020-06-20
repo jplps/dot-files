@@ -1,10 +1,16 @@
 # Dot Files
 
+Check simple "dot-files" that helps us in everyday jobs.
+
+## Concept
+
 Files and/or directories with a "." prepended to their name are considered "dot-files". The leading dot is used as an indicator by software like bash and nautilus to not list these files normally, but only when they are specifically requested like pressing Ctrl+H in explorers for example. They are hidden by default.
 
 Dot-files are used to store configurations for different applications but they are sometimes used otherwise. 
 
 People tend to backup & also share their dot-files so others can boot-strap their own applications using those configuration files. Please refer to https://dotfiles.github.io/ and build your own!
+
+----
 
 ## Bash
 
@@ -20,10 +26,14 @@ Contains git parsers to gather data from the branches, and a prompt-export to sh
 
 Global bash (terminal, or cli - command line interface) aliases files called from the .bashrc file.
 
+----
+
 ## Git
 ### .gitconfig
 
 Basic global configurations for the git program. Contains few variable definitions. See https://git-scm.com/docs/git-config.
+
+----
 
 ## Cron
 ### .jobs
