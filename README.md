@@ -51,5 +51,3 @@ In your home folder:
 	$ update-rc.d cron defaults
 
 ----
-
-@LPS
