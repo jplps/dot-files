@@ -10,8 +10,6 @@ Dot-files are used to store configurations for different applications but they a
 
 People tend to backup & also share their dot-files so others can boot-strap their own applications using those configuration files. Please refer to https://dotfiles.github.io/ and build your own!
 
-----
-
 ## Bash
 
 When the shell is executed, there are initialization files it reads which help to setup an environment for itself, and the system user, that are predefined - and customized - functions, variables, aliases and so on.
@@ -51,5 +49,7 @@ In your home folder:
 		\*This opens the cron file and you will have to insert the following rule to cron knows what script to execute on reboot:
 		@reboot /home/admin/.jobs/reboot.sh
 	$ update-rc.d cron defaults
+
+----
 
 @LPS
