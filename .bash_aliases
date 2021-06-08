@@ -8,7 +8,6 @@ alias ...='cd ../..'
 alias ....='cd ../../../'
 alias las='ls -al'
 alias lasd='ls -al --group-directories-first'
-
 alias hosts="sudo nano /etc/hosts"
 
 # flip wacom to left handed freaks:
