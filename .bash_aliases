@@ -3,9 +3,9 @@
 # for examples
 
 # general aliases
-alias ..="cd .."
-alias ...="cd ../.."
-alias ....="cd ../../../"
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../../'
 alias las='ls -al'
 alias lasd='ls -al --group-directories-first'
 
