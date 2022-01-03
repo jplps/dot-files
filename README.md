@@ -24,6 +24,31 @@ Contains git parsers to gather data from the branches, and a prompt-export to sh
 
 Global bash (terminal, or cli - command line interface) aliases files called from the .bashrc file.
 
+### Bash Scripting
+
+Scripts run by bash have the .sh extention and can be built to execute something like a backup (home folder copy):
+
+```
+# Shell interpreter definition:
+#!/bin/bash
+
+# Command execution (simple backup):
+tar -czf /tmp/home-directory.tar.gz /home/backup-directory
+
+# Variables and backup:
+user=$(whoami)
+input=/home/$user
+output=/tmp/${user}_home_$(date +%Y-%m-%d_%H%M%S).tar.gz
+
+tar -czf $output $input 2> /dev/null
+
+echo "Backup of $input completed! Output backup file details:"
+ls -l $output
+```
+
+With output redirection, we can eliminate unwanted stderr messages by redirecting it with 2> notation to /dev/null. Consider /dev/null as a data sink, which discards any data redirected to it ($ man null).
+
+
 ## Git
 ### .gitconfig
 
