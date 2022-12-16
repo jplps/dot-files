@@ -70,3 +70,12 @@ In your home folder:
 		\*This opens the cron file and you will have to insert the following rule to cron knows what script to execute on reboot:
 		@reboot /home/admin/.jobs/reboot.sh
 	$ update-rc.d cron defaults
+
+## Emacs
+### .emacs
+
+This file is an initialization script written in lisp for emacs configurations and packages. This should be in home dir, and emacs will find it and run before initializes.
+
+It contains the setup for dealing with developments in clojure (with cider), org files, plantuml and other interesting things.
+
+See the manual and other stuff at https://www.gnu.org/software/emacs/ for more details.
