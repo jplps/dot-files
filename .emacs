@@ -3,12 +3,11 @@
 (set-face-background 'fringe "#000")
 (set-background-color "#000")
 (set-cursor-color "#aaa")
-(set-face-attribute
- 'highlight nil
- :inherit nil
- :background "#1e1e1e"
- :foreground 'unspecified
- :underline nil)
+(set-face-attribute 'highlight nil
+		    :inherit nil
+		    :background "#1e1e1e"
+		    :foreground 'unspecified
+		    :underline nil)
 
 ;; Remove visible stuff around the interface
 (scroll-bar-mode -1)
@@ -19,25 +18,51 @@
 ;; Display columns in modeline
 (column-number-mode 1)
 
-;; line numbers customized on the left side
+;; Line numbers customized on the left side
 (global-display-line-numbers-mode 1)
-
 (set-face-foreground 'line-number "#555")
-(set-face-attribute
- 'line-number-current-line nil
- :foreground "orange"
- :background "#1e1e1e")
+(set-face-attribute 'line-number-current-line nil
+		    :foreground "orange"
+		    :background "#1e1e1e")
 
-;; Set comments color
+;; Set comments color and highlight active line
 (set-face-foreground 'font-lock-comment-face "#555")
-
-;; Highlight active line, preserving the colors.
 (global-hl-line-mode 1)
 
 ;; Enable autoloading buffers when files changes on disk
 (global-auto-revert-mode 1)
 
-;; Setting some pointers
+;; Modeline customization
+(setq-default
+ mode-line-format (list
+		   ;; File status (modified, read-only)
+		   '(:eval (cond (buffer-read-only " RO")
+				 ((buffer-modified-p) " *")
+				 (t " ")))
+
+		   ;; Buffer name
+		   '(:eval (propertize " %b " 'face '(:weight bold :foreground "#ccc")))
+		   
+		   ;; Line column and percentage
+		   " %I %l,%c"
+
+		   ;; Buffer percentage
+		   " %p"
+
+		   ;; Major mode
+                   "  " '(:eval mode-name)
+
+		   ;; Git branch
+		   '(:eval (let ((branch (car (vc-git-branches))))
+			     (when branch
+			       (concat " "
+				       (propertize (format " %s" branch)
+						   'face '(:foreground "#ccc"))))))))
+
+;; Ensure mode line is updated
+(add-hook 'after-save-hook 'force-mode-line-update)
+
+;; Setting some general pointers
 (setq
  ;; Clear frame title 
  frame-title-format nil
@@ -61,9 +86,6 @@
  ;; Enable packages only if used
  package-enable-at-startup nil
 
- ;; Customize modeline
- mode-line-position-column-line-format '("  %I  %l,%c")
-
  ;; Enable flashing the modeline instead of the anoying bell sound
  ring-bell-function (lambda ()
 		      (let ((orig-fg (face-foreground 'mode-line)))
@@ -74,11 +96,18 @@
 					       (set-face-foreground 'mode-line fg))
 					     orig-fg))))
 
+;; Cycle windows forward/backward 
+(global-set-key (kbd "C-x ]") (lambda () (interactive) (other-window -1)))
+(global-set-key (kbd "C-x [") (lambda () (interactive) (other-window +1)))
+
 ;; Require and initialize packages with straight.el
 (defvar bootstrap-version)
 (let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 6))
+       (expand-file-name
+        "straight/repos/straight.el/bootstrap.el"
+        (or (bound-and-true-p straight-base-dir)
+            user-emacs-directory)))
+      (bootstrap-version 7))
   (unless (file-exists-p bootstrap-file)
     (with-current-buffer
         (url-retrieve-synchronously
@@ -117,11 +146,81 @@
 ;; Which-key helps with commands while waiting for the input
 (use-package which-key :defer 0 :config (which-key-mode))
 
+;; Treemacs is better than dired and that's a fact
+(use-package treemacs
+  :defer t
+  :init
+  (with-eval-after-load 'winum
+    (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+  :config
+  (progn
+    (set-face-attribute 'treemacs-root-face nil
+                        :foreground "#eee"
+			:height 1
+                        :underline nil)
+    (set-face-attribute 'treemacs-directory-face nil
+                        :foreground "#ccc")
+    (treemacs-resize-icons 16)))
+
 ;; Easy minibuffer autocompletion with Vertico and Consult
 (use-package vertico :config (vertico-mode 1))
 (use-package consult :config (setq completion-styles '(substring basic)))
 
-;; Company mode helps with in-buffer completions, enable it globally
+;; Magit git porcelain
+(use-package magit :defer t)
+
+;; Clojure-mode for support to .clj files and Cider for extra support
+(use-package clojure-mode :defer t)
+(use-package cider
+  :defer t
+  :config
+  (setq
+   ;; Check https://docs.cider.mx/cider/repl/configuration.html
+   cider-repl-display-help-banner nil
+   cider-repl-pop-to-buffer-on-connect nil
+   cider-repl-display-in-current-window t
+   ;; Clojure debugger with the repl
+   cider-jack-in-dependencies '(("com.github.flow-storm/flow-storm-dbg" "3.15.5"))))
+
+;; Lsp backend protocols
+(use-package lsp-mode
+  :init (setq lsp-keymap-prefix "C-c l")
+  :hook '((clojure-mode . lsp)
+	  (lsp-mode . lsp-enable-which-key-integration))
+  :commands (lsp lsp-completion-provider)
+  :config
+  (dolist (m '(clojure-mode
+	       clojurec-mode
+	       clojurescript-mode
+	       clojurex-mode))
+    (add-to-list 'lsp-language-id-configuration `(,m . "clojure")))
+
+  (setq
+   lsp-lens-enable nil
+   lsp-modeline-workspace-status-enable nil
+   lsp-headerline-breadcrumb-enable nil
+   lsp-modeline-code-actions-enable nil
+   lsp-modeline-diagnostics-enable nil
+   lsp-completion-show-kind nil
+   lsp-enable-file-watchers t
+   lsp-ui-sideline-show-diagnostics t
+   lsp-log-io nil
+   lsp-response-timeout 1
+   lsp-ui-doc-show-with-cursor t
+   lsp-ui-doc-show-with-mouse nil
+   lsp-ui-doc-position 'top
+   lsp-eldoc-render-all nil
+   lsp-signature-render-documentation t))
+
+;; Improve completions with Orderless
+(use-package orderless
+  :init
+  (setq
+   completion-styles '(orderless basic)
+   completion-category-defaults nil
+   completion-category-overrides '((file (styles partial-completion)))))
+
+;; Company mode helps with in-buffer completions
 (use-package company
   :defer t
   :config
@@ -153,7 +252,7 @@
   company-backends '(company-capf)
   (global-company-mode))
 
-;; Set keybind to activate tooltip manually
+;; Set company keybind to activate tooltip manually
 (global-set-key (kbd "C-<tab>")
                 (lambda ()
                   (interactive)
@@ -169,6 +268,11 @@
   (require 'smartparens-config)
   (smartparens-global-mode))
 
+(global-set-key (kbd "C-c <left>") 'sp-forward-slurp-sexp)
+(global-set-key (kbd "C-c <right>") 'sp-forward-barf-sexp)
+(global-set-key (kbd "C-c C-.") 'sp-backward-slurp-sexp)
+(global-set-key (kbd "C-c C-,") 'sp-backward-barf-sexp)
+
 ;; MoveText helps with M-up/down line swap
 (use-package move-text :defer 0 :config (move-text-default-bindings))
 
@@ -179,11 +283,19 @@
 (global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
 (global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this)
 
-;; Clojure-mode for support to .clj files and Cider for extra support
-(use-package clojure-mode :defer t)
-(use-package cider :defer t :config (setq cider-repl-display-help-banner nil))
+;; Common lisp support with Slime
+(use-package slime
+  :defer t
+  :config
+  (setq
+   inferior-lisp-program "/opt/homebrew/bin/sbcl"
+   slime-contribs '(slime-fancy)
+   slime-repl-history-file "~/.emacs.d/slime-history.eld"
+   slime-repl-history-size 1000
+   slime-repl-history-remove-duplicates t
+   slime-net-coding-system 'utf-8-unix))
 
-;; Org mode for suppor to .org files
+;; Org mode for support to .org files
 (use-package org
   :defer t
   :commands (org-mode org-capture org-agenda)
@@ -192,19 +304,18 @@
    ;; Set visual references
    org-hide-emphasis-markers t
    org-hide-leading-stars t
-   
-   ;; Set path so the agenda knows it's files
-   org-agenda-files '("~/"))
-  
+   org-adapt-indentation t
+   org-indent-indentation-per-level 2)
+
   ;; Replace list hyphen with dot in org mode
   (font-lock-add-keywords 'org-mode
-			  '(("^ *\\([-]\\) "
-			     (0 (prog1 ()
-				  (compose-region (match-beginning 1)
-						  (match-end 1)
-						  "•")))))))
+                          '(("^ *\\([-]\\) "
+                             (0 (prog1 ()
+                                  (compose-region (match-beginning 1)
+                                                  (match-end 1)
+                                                  "•")))))))
 
-;; Set most used keybindings for org
+;; Keybindings for org
 (global-set-key (kbd "C-c l") #'org-store-link)
 (global-set-key (kbd "C-c a") #'org-agenda)
 (global-set-key (kbd "C-c c") #'org-capture)
@@ -217,7 +328,23 @@
   (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
   (org-babel-do-load-languages 'org-babel-load-languages '((plantuml . t))))
 
-;; Checking the time emacs takes to load
+;; Dumb Jump helps find definitions
+(use-package dumb-jump
+  :defer 0
+  :init (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
+  :config (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+
+;; Automaticaly updates packages
+(use-package auto-package-update
+  :custom
+  (auto-package-update-interval 30)
+  (auto-package-update-prompt-before-update t)
+  (auto-package-update-hide-results t)
+  :config
+  (auto-package-update-maybe)
+  (auto-package-update-at-time "09:00"))
+
+;; Log startup benchmark
 (defun echo-startup-time ()
   (message "Emacs loaded in %s with %d garbage collections"
 	   (format "%.2f secs"
