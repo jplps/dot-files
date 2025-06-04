@@ -71,11 +71,11 @@
  inhibit-startup-message t
 
  ;; Set default window position and size
- default-frame-alist '((ns-transparent-titlebar . t)
-                       (ns-appearance . dark)
-                       (left . 0)
-		       (width . 100)
-		       (fullscreen . fullheight))
+ ;; default-frame-alist '((ns-transparent-titlebar . t)
+ ;;                       (ns-appearance . dark)
+ ;;                       (left . 0)
+ ;; 		       (width . 100)
+ ;; 		       (fullscreen . fullheight))
 
  ;; Set default identations with spaces only
  indent-tabs-mode nil
@@ -99,6 +99,19 @@
 ;; Cycle windows forward/backward 
 (global-set-key (kbd "C-x ]") (lambda () (interactive) (other-window -1)))
 (global-set-key (kbd "C-x [") (lambda () (interactive) (other-window +1)))
+
+;; Add melpa to package archives
+(require 'package)
+
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+
+;; Comment/uncomment this line to enable MELPA Stable if desired.
+;; See `package-archive-priorities` and `package-pinned-packages`.
+;; Most users will not need or want to do this.
+;; (add-to-list 'package-archives
+;;              '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+
+(package-initialize)
 
 ;; Require and initialize packages with straight.el
 (defvar bootstrap-version)
@@ -141,12 +154,20 @@
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
 
-(use-package exec-path-from-shell :init (add-hook 'after-init-hook 'initialize-path))
+(use-package exec-path-from-shell
+  :defer 0
+  :init
+  (add-hook 'after-init-hook 'initialize-path)
+  :config
+  (exec-path-from-shell-copy-env "DOCKER_HOST")
+  (exec-path-from-shell-copy-env "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
+  (exec-path-from-shell-copy-env "TESTCONTAINERS_RYUK_DISABLED"))
+
 
 ;; Which-key helps with commands while waiting for the input
 (use-package which-key :defer 0 :config (which-key-mode))
 
-;; Treemacs is better than dired and that's a fact
+;; Treemacs is way better than dired
 (use-package treemacs
   :defer t
   :init
@@ -166,8 +187,24 @@
 (use-package vertico :config (vertico-mode 1))
 (use-package consult :config (setq completion-styles '(substring basic)))
 
-;; Magit git porcelain
+;; Marginalia for extra info in minibuffer completions
+(use-package marginalia :config (marginalia-mode))
+
+;; Improve fuzzy completions with Orderless
+(use-package orderless
+  :init
+  (setq
+   completion-styles '(orderless basic)
+   completion-category-defaults nil
+   completion-category-overrides '((file (styles partial-completion)))))
+
+;; Magit git porcelain with forge to handle PRs
+(setq
+ auth-sources '("~/.authinfo.gpg")
+ epg-pinentry-mode 'loopback)
+
 (use-package magit :defer t)
+(use-package forge :after magit)
 
 ;; Clojure-mode for support to .clj files and Cider for extra support
 (use-package clojure-mode :defer t)
@@ -186,6 +223,8 @@
 (use-package lsp-mode
   :init (setq lsp-keymap-prefix "C-c l")
   :hook '((clojure-mode . lsp)
+	  (typescript-mode . lsp)
+	  (yaml-ts-mode . lsp)
 	  (lsp-mode . lsp-enable-which-key-integration))
   :commands (lsp lsp-completion-provider)
   :config
@@ -212,13 +251,7 @@
    lsp-eldoc-render-all nil
    lsp-signature-render-documentation t))
 
-;; Improve completions with Orderless
-(use-package orderless
-  :init
-  (setq
-   completion-styles '(orderless basic)
-   completion-category-defaults nil
-   completion-category-overrides '((file (styles partial-completion)))))
+(use-package consult-lsp :after lsp-mode)
 
 ;; Company mode helps with in-buffer completions
 (use-package company
@@ -296,29 +329,29 @@
    slime-net-coding-system 'utf-8-unix))
 
 ;; Org mode for support to .org files
-(use-package org
-  :defer t
-  :commands (org-mode org-capture org-agenda)
-  :config
-  (setq
-   ;; Set visual references
-   org-hide-emphasis-markers t
-   org-hide-leading-stars t
-   org-adapt-indentation t
-   org-indent-indentation-per-level 2)
+;; (use-package org
+;;   :defer t
+;;   :commands (org-mode org-capture org-agenda)
+;;   :config
+;;   (setq
+;;    ;; Set visual references
+;;    org-hide-emphasis-markers t
+;;    org-hide-leading-stars t
+;;    org-adapt-indentation t
+;;    org-indent-indentation-per-level 2)
 
-  ;; Replace list hyphen with dot in org mode
-  (font-lock-add-keywords 'org-mode
-                          '(("^ *\\([-]\\) "
-                             (0 (prog1 ()
-                                  (compose-region (match-beginning 1)
-                                                  (match-end 1)
-                                                  "•")))))))
+;;   ;; Replace list hyphen with dot in org mode
+;;   (font-lock-add-keywords 'org-mode
+;;                           '(("^ *\\([-]\\) "
+;;                              (0 (prog1 ()
+;;                                   (compose-region (match-beginning 1)
+;;                                                   (match-end 1)
+;;                                                   "•")))))))
 
-;; Keybindings for org
-(global-set-key (kbd "C-c l") #'org-store-link)
-(global-set-key (kbd "C-c a") #'org-agenda)
-(global-set-key (kbd "C-c c") #'org-capture)
+;; ;; Keybindings for org
+;; (global-set-key (kbd "C-c l") #'org-store-link)
+;; (global-set-key (kbd "C-c a") #'org-agenda)
+;; (global-set-key (kbd "C-c c") #'org-capture)
 
 ;; Plantuml-mode helps versionize diagrams
 (use-package plantuml-mode
@@ -354,3 +387,32 @@
 	   gcs-done))
 
 (add-hook 'emacs-startup-hook #'echo-startup-time)
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(safe-local-variable-values
+   '((eval progn
+           (defun cider-send-reset nil
+             "Send commands to CIDER to restart the development environment."
+             (interactive)
+             (cider-interactive-eval "(do (ns user) (reset))"))
+           (defun cider-send-reload nil
+             "Send commands to CIDER to reload the development environment."
+             (interactive)
+             (cider-interactive-eval "(do (ns user) (reload))"))
+           (defun cider-send-reload-tests nil
+             "Send commands to CIDER to reload test namespaces."
+             (interactive)
+             (cider-interactive-eval "(do (ns user) (reload-tests))"))
+           (defun cider-send-go nil
+             "Send commands to CIDER to start the system."
+             (interactive)
+             (cider-interactive-eval "(do (ns user) (go))"))))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(company-tooltip-quick-access ((t (:foreground "orange")))))

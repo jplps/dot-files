@@ -1,13 +1,13 @@
-[user]
-	email = joao.pedro.pacheco@hotmail.com
-	name = jp
-
 [core]
-	editor = nano
-
+	editor = emacs
 [alias]
 	co = checkout
 	br = branch
 	ci = commit
 	st = status
 	last = log -3 HEAD
+[user]
+	name = João Silva
+	email = joao.silva@brasilparalelo.com.br
+[gitlab]
+	user = jplps
