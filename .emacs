@@ -1,120 +1,263 @@
-;; Set a dark theme, style a little
-(load-theme 'wombat)
-(set-face-background 'fringe "#000")
-(set-background-color "#000")
-(set-cursor-color "#aaa")
-(set-face-attribute 'highlight nil
-		    :inherit nil
-		    :background "#1e1e1e"
-		    :foreground 'unspecified
-		    :underline nil)
+;; -*- lexical-binding: t; -*-
+(defvar jp--initial-tabs-done nil)
+(defvar jp/file-name-handler-alist-backup file-name-handler-alist)
 
-;; Remove visible stuff around the interface
-(scroll-bar-mode -1)
-(tool-bar-mode -1)
-(tooltip-mode -1)
-(menu-bar-mode -1)
+;; Fast path: disable heavy features during init
+(defconst jp/gc-high most-positive-fixnum)
+(defconst jp/gc-normal (* 16 1024 1024))
 
-;; Display columns in modeline
-(column-number-mode 1)
+(defun jp/setup-initial-frame-layout (&optional force)
+  "Tab1: init.el | *Messages*
+   Tab2: *scratch*
+   With FORCE (C-u), rebuild even if already done."
+  (interactive "P")
+  (when (or force
+	    (not jp--initial-tabs-done))
+    ;; Tab 2 with scratch
+    (tab-bar-new-tab)
+    (switch-to-buffer (get-buffer "*scratch*"))
+    (delete-other-windows)
+    (ignore-errors (tab-bar-rename-tab "scratch"))
 
-;; Line numbers customized on the left side
-(global-display-line-numbers-mode 1)
-(set-face-foreground 'line-number "#555")
-(set-face-attribute 'line-number-current-line nil
-		    :foreground "orange"
-		    :background "#1e1e1e")
+    ;; Tab 1: 1 left | 2 right
+    (tab-bar-select-tab 1)
+    (delete-other-windows)
+    (find-file (or user-init-file
+		   (expand-file-name "~/.emacs")))
 
-;; Set comments color and highlight active line
-(set-face-foreground 'font-lock-comment-face "#555")
-(global-hl-line-mode 1)
+    (let* ((w-right (split-window-right)) w-top w-bot)
+      (select-window w-right)
+      (set-window-buffer (selected-window) (get-buffer "*Messages*"))
+      (set-window-buffer (split-window-below) (get-buffer "*scratch*")))
 
-;; Enable autoloading buffers when files changes on disk
-(global-auto-revert-mode 1)
+    (balance-windows)
+    (ignore-errors (tab-bar-rename-tab "main"))
 
-;; Modeline customization
-(setq-default
- mode-line-format (list
-		   ;; File status (modified, read-only)
-		   '(:eval (cond (buffer-read-only " RO")
-				 ((buffer-modified-p) " *")
-				 (t " ")))
+    (setq jp--initial-tabs-done t)))
 
-		   ;; Buffer name
-		   '(:eval (propertize " %b " 'face '(:weight bold :foreground "#ccc")))
-		   
-		   ;; Line column and percentage
-		   " %I %l,%c"
+(add-hook 'window-setup-hook
+          (lambda ()
+            (set-frame-parameter nil 'fullscreen 'fullheight)
+            (set-frame-size nil 256 (floor (/ (display-pixel-height)
+					      (frame-char-height))))))
 
-		   ;; Buffer percentage
-		   " %p"
+(defun jp/flash-mode-line ()
+  "Briefly flash mode-line instead of bell."
+  (let ((orig (face-foreground 'mode-line)))
+    (set-face-foreground 'mode-line "#ccc")
+    (run-with-timer 0.1
+                    nil
+                    (lambda (c)
+                      (set-face-foreground 'mode-line c))
+                    orig)))
 
-		   ;; Major mode
-                   "  " '(:eval mode-name)
+(defun jp/numbered-tab (tab i)
+  (propertize
+   (format
+    (number-to-string i)
+    (alist-get 'name tab))
+   'face (list
+	  (append '(:height 1.15)
+                  (if (eq (car tab) 'current-tab)
+		    '(:foreground "orange")
+                    '(:foreground "#555"))))))
 
-		   ;; Git branch
-		   '(:eval (let ((branch (car (vc-git-branches))))
-			     (when branch
-			       (concat " "
-				       (propertize (format " %s" branch)
-						   'face '(:foreground "#ccc"))))))))
-
-;; Ensure mode line is updated
-(add-hook 'after-save-hook 'force-mode-line-update)
-
-;; Setting some general pointers
 (setq
- ;; Clear frame title 
- frame-title-format nil
-
- ;; Disable GNU startup buffer
+ ;; Startup behavior
+ inhibit-startup-screen t
  inhibit-startup-message t
-
- ;; Set default window position and size
- ;; default-frame-alist '((ns-transparent-titlebar . t)
- ;;                       (ns-appearance . dark)
- ;;                       (left . 0)
- ;; 		       (width . 100)
- ;; 		       (fullscreen . fullheight))
-
- ;; Set default identations with spaces only
+ package-enable-at-startup nil
+ frame-inhibit-implied-resize t
+ ;; Compilation and warnings
+ byte-compile-warnings '(not obsolete)
+ warning-suppress-log-types '((comp) (bytecomp))
+ native-comp-async-report-warnings-errors 'silent
+ ;; Performance: postpone GC, simplify frame painting
+ gc-cons-threshold jp/gc-high
+ gc-cons-percentage 0.6
+ frame-title-format nil
+ ;; Light bell
+ ring-bell-function #'jp/flash-mode-line
+ ;; Auto-revert tuning
+ auto-revert-verbose nil
+ auto-revert-avoid-polling t
+ auto-revert-interval 5
+ auto-revert-check-vc-info t
+ ;; Indentation defaults
  indent-tabs-mode nil
  js-indent-level 2
  css-indent-offset 2
  plantuml-indent-level 2
+ ;; Tab-bar customizations
+ tab-bar-show t
+ tab-bar-tab-hints nil
+ tab-bar-separator " "
+ tab-bar-close-button-show nil
+ tab-bar-new-button-show nil
+ tab-bar-button-margin nil
+ tab-bar-auto-width nil
+ tab-bar-new-tab-choice "*scratch*"
+ tab-bar-select-tab-modifiers '(control)
+ tab-bar-tab-name-format-function #'jp/numbered-tab)
 
- ;; Enable packages only if used
- package-enable-at-startup nil
+(defun jp/after-startup ()
+  "Post-startup restoration and lazy global enables."
 
- ;; Enable flashing the modeline instead of the anoying bell sound
- ring-bell-function (lambda ()
-		      (let ((orig-fg (face-foreground 'mode-line)))
-			(set-face-foreground 'mode-line "#ccc")
-			(run-with-idle-timer 0.1
-					     nil
-					     (lambda (fg)
-					       (set-face-foreground 'mode-line fg))
-					     orig-fg))))
+  (setq
+   ;; Restore performance settings
+   gc-cons-threshold jp/gc-normal
+   gc-cons-percentage 0.1
+   file-name-handler-alist jp/file-name-handler-alist-backup)
 
-;; Cycle windows forward/backward 
-(global-set-key (kbd "C-x ]") (lambda () (interactive) (other-window -1)))
-(global-set-key (kbd "C-x [") (lambda () (interactive) (other-window +1)))
+  ;; Enable visual globals lazily to avoid stutter on first paint
+  (run-with-idle-timer 0.30 nil #'global-display-line-numbers-mode 1)
+  (run-with-idle-timer 0.50 nil #'global-hl-line-mode 1)
+  (run-with-idle-timer 0.70 nil #'global-auto-revert-mode 1)
 
-;; Add melpa to package archives
-(require 'package)
+  ;; Divide the frame
+  (jp/setup-initial-frame-layout)
 
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+  ;; OFF
+  (scroll-bar-mode -1)
+  (tool-bar-mode -1)
+  (tooltip-mode -1)
+  (menu-bar-mode -1)
+  ;; ON
+  (column-number-mode 1)
+  (winner-mode 1)
+  (which-key-mode 1)
+  (smartparens-global-mode 1)
+  (vertico-mode 1)
+  (global-company-mode 1)
+  (marginalia-mode 1)
 
-;; Comment/uncomment this line to enable MELPA Stable if desired.
-;; See `package-archive-priorities` and `package-pinned-packages`.
-;; Most users will not need or want to do this.
-;; (add-to-list 'package-archives
-;;              '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+  (message "First install: ~121.8s")
+  (message "Init time: %s | GC: %d" (emacs-init-time) gcs-done))
 
-(package-initialize)
+(add-hook 'emacs-startup-hook #'jp/after-startup)
 
+;; Font faces
+(defun jp/apply-faces ()
+  (custom-theme-set-faces
+   'user
+   ;; base
+   '(default ((t (:background "#000" :height 115))))
+   '(fringe  ((t (:background "#000"))))
+   '(cursor  ((t (:background "#aaa"))))
+   ;; highlights
+   '(highlight ((t (:background "#1e1e1e" :foreground unspecified :underline unspecified))))
+   ;; line numbers
+   '(line-number ((t (:foreground "#555" :background unspecified))))
+   '(line-number-current-line ((t (:foreground "orange" :background "#1e1e1e"))))
+   ;; tab-bar
+   '(tab-bar ((t (:background "#000"))))
+   ;; comments
+   '(font-lock-comment-face ((t (:foreground "#555"))))))
+
+;; Main theme
+(advice-add 'load-theme :after (lambda (&rest _) (jp/apply-faces)))
+(load-theme 'wombat t)
+
+(add-to-list 'default-frame-alist '(background-color . "#000"))
+(add-to-list 'default-frame-alist '(cursor-color . "#aaa"))
+(add-to-list 'default-frame-alist '(tab-bar-lines . 1))
+
+;; Global text scaling (named commands)
+(defvar jp/base-height (face-attribute 'default :height))
+
+(defun jp/global-text-scale (n)
+  "N>0 grow, N<0 shrink, N=0 reset."
+  (interactive "p")
+  (let* ((cur (face-attribute 'default :height))
+         (delta (cond ((= n 0) (- jp/base-height cur))
+                      (t (* n 10)))))
+    (set-face-attribute 'default nil :height (+ cur delta))))
+
+;; Global zoom
+(global-set-key (kbd "C-+") (lambda () (interactive) (jp/global-text-scale +1)))
+(global-set-key (kbd "C--") (lambda () (interactive) (jp/global-text-scale -1)))
+(global-set-key (kbd "C-M-0") (lambda () (interactive) (jp/global-text-scale 0)))
+
+;; Branch resolver
+(defun jp/current-branch ()
+  (or (when buffer-file-name
+        (ignore-errors (vc-working-branch buffer-file-name)))
+      (when (and (executable-find "git")
+                 (eq (vc-backend (or buffer-file-name default-directory)) 'Git))
+        (with-temp-buffer
+          (let ((default-directory (or (vc-root-dir) default-directory)))
+            (when (eq 0 (call-process "git" nil t nil "symbolic-ref" "--short" "-q" "HEAD"))
+              (string-trim (buffer-string))))))))
+
+;; Window numbers by screen position (L/R, top/bottom)
+(defvar jp/window-number-map nil)
+
+(defun jp--renumber-windows ()
+  (let* ((wins (window-list (selected-frame) 'no-mini))
+         (sorted (sort (copy-sequence wins)
+                       (lambda (a b)
+                         (let ((ea (window-edges a))
+                               (eb (window-edges b)))
+                           (or (< (nth 1 ea) (nth 1 eb))
+                               (and (= (nth 1 ea) (nth 1 eb))
+                                    (< (nth 0 ea) (nth 0 eb)))))))))
+    (setq jp/window-number-map nil)
+    (let ((i 1))
+      (dolist (w sorted)
+        (set-window-parameter w 'jp/window-number i)
+        (push (cons i w) jp/window-number-map)
+        (setq i (1+ i))))
+    (setq jp/window-number-map (nreverse jp/window-number-map))))
+
+(add-hook 'window-configuration-change-hook #'jp--renumber-windows)
+(add-hook 'buffer-list-update-hook #'jp--renumber-windows)
+
+(defun jp/mode-line-window-number ()
+  (let ((n (window-parameter nil 'jp/window-number)))
+    (when n
+      (propertize
+       (number-to-string n)
+       'face '(:foreground "orange")))))
+
+;; Modeline
+(setq-default
+ mode-line-format
+ '(" "
+   (:eval (jp/mode-line-window-number))
+   (:eval (cond (buffer-read-only " RO")
+                ((buffer-modified-p) " *")
+                (t "")))
+   (:eval (propertize " %b" 'face '(:foreground "orange")))
+   (:eval (propertize " %I %l,%c %p" 'face '(:foreground "#555")))
+   " "
+   (:eval mode-name)
+   (:eval (let ((branch (jp/current-branch)))
+            (when branch
+              (concat " " (propertize (format " %s" branch)
+                                      'face '(:foreground "#ccc"))))))))
+
+(add-hook 'after-save-hook #'force-mode-line-update)
+
+;; Change windows quickly
+(defun jp/select-window-by-number (n)
+  "Select window N by screen position."
+  (interactive "nWindow number: ")
+  (let ((w (cdr (assoc n jp/window-number-map))))
+    (when (window-live-p w) (select-window w))))
+
+(dotimes (i 9)
+  (let ((n (1+ i)))
+    (global-set-key (kbd (format "M-%d" n))
+		    `(lambda () (interactive) (jp/select-window-by-number ,n)))))
+
+;; Windows history
+(global-set-key (kbd "C-c w u") #'winner-undo)
+(global-set-key (kbd "C-c w r") #'winner-redo)
+
+;; PACKAGE
 ;; Require and initialize packages with straight.el
 (defvar bootstrap-version)
+
 (let ((bootstrap-file
        (expand-file-name
         "straight/repos/straight.el/bootstrap.el"
@@ -130,18 +273,14 @@
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
 
-;; Integrating straight with use-package for easy syntax
 (straight-use-package 'use-package)
-(setq straight-use-package-by-default t)
-
-;; Benchmarking emacs startup
-(use-package benchmark-init :config (add-hook 'after-init-hook 'benchmark-init/deactivate))
-
-;; Deal with garbadge collection with magic hack
-(use-package gcmh :config (gcmh-mode 1))
+(setq
+ straight-use-package-by-default t
+ use-package-always-defer t)
 
 ;; No-littering dump emacs's autofiles where you want
 (use-package no-littering
+  :demand t
   :config
   ;; Create directories in wich you'd like to save the litter
   (setq auto-save-file-name-transforms
@@ -149,30 +288,40 @@
 	backup-directory-alist
 	`((".*" . ,(no-littering-expand-var-file-name "~/.emacs.d/var/backup/")))))
 
-;; Resolve MacOS tty $PATH discrepancy
-(defun initialize-path ()
-  (when (memq window-system '(mac ns x))
-    (exec-path-from-shell-initialize)))
-
+;; macOS GUI only
 (use-package exec-path-from-shell
-  :defer 0
   :init
-  (add-hook 'after-init-hook 'initialize-path)
+  (setq exec-path-from-shell-arguments '("-l")
+        exec-path-from-shell-check-startup-files nil
+        exec-path-from-shell-variables
+        '("PATH" "MANPATH" "DOCKER_HOST"
+          "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"
+          "TESTCONTAINERS_RYUK_DISABLED"))
   :config
-  (exec-path-from-shell-copy-env "DOCKER_HOST")
-  (exec-path-from-shell-copy-env "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
-  (exec-path-from-shell-copy-env "TESTCONTAINERS_RYUK_DISABLED"))
+  (exec-path-from-shell-initialize))
 
+;; Smartparens makes the pairs (), [], {}, etc. always even
+(use-package smartparens :demand t)
 
-;; Which-key helps with commands while waiting for the input
-(use-package which-key :defer 0 :config (which-key-mode))
+;; Slurp code
+(with-eval-after-load 'smartparens
+  (define-key smartparens-mode-map (kbd "C-c <left>") #'sp-forward-slurp-sexp)
+  (define-key smartparens-mode-map (kbd "C-c <right>") #'sp-forward-barf-sexp)
+  (define-key smartparens-mode-map (kbd "C-c C-.") #'sp-backward-slurp-sexp)
+  (define-key smartparens-mode-map (kbd "C-c C-,") #'sp-backward-barf-sexp))
+
+;; MoveText helps with M-up/down line swap
+(use-package move-text :demand t :config (move-text-default-bindings))
+
+;; Multiple Cursors allow multi line selection for ease edition
+(use-package multiple-cursors :demand t)
+
+(global-set-key (kbd "C->") 'mc/mark-next-like-this)
+(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
+(global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this)
 
 ;; Treemacs is way better than dired
 (use-package treemacs
-  :defer t
-  :init
-  (with-eval-after-load 'winum
-    (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
   (progn
     (set-face-attribute 'treemacs-root-face nil
@@ -183,33 +332,135 @@
                         :foreground "#ccc")
     (treemacs-resize-icons 16)))
 
-;; Easy minibuffer autocompletion with Vertico and Consult
-(use-package vertico :config (vertico-mode 1))
-(use-package consult :config (setq completion-styles '(substring basic)))
+;; Vertico
+(use-package vertico
+  :config
+  (require 'vertico-directory)
+  (define-key vertico-map (kbd "RET") #'vertico-directory-enter)
+  (define-key vertico-map (kbd "DEL") #'vertico-directory-delete-char)
+  (define-key vertico-map (kbd "M-DEL") #'vertico-directory-delete-word)
+  (add-hook 'minibuffer-setup-hook #'vertico-repeat-save)
+  (global-set-key (kbd "M-R") #'vertico-repeat))
 
-;; Marginalia for extra info in minibuffer completions
-(use-package marginalia :config (marginalia-mode))
+;; Marginalia annotations
+(use-package marginalia)
 
-;; Improve fuzzy completions with Orderless
+;; Orderless: strong fuzzy matching with sane fallbacks
 (use-package orderless
   :init
   (setq
    completion-styles '(orderless basic)
    completion-category-defaults nil
-   completion-category-overrides '((file (styles partial-completion)))))
+   completion-ignore-case t
+   orderless-matching-styles '(orderless-literal orderless-regexp orderless-flex)
+   read-file-name-completion-ignore-case t
+   read-buffer-completion-ignore-case t))
 
-;; Magit git porcelain with forge to handle PRs
+;; Consult: fast, async searching and buffers
+(use-package consult
+  :init
+  ;; Project root for Consult commands
+  (setq consult-project-function
+        (lambda (_)
+          (when-let* ((proj (project-current t)))
+            (car (project-roots proj)))))
+  :config
+  ;; Preview only when you press M-.
+  (consult-customize consult-buffer
+                     consult-recent-file
+                     consult-ripgrep
+                     consult-git-grep
+                     consult-grep
+                     :preview-key "M-.")
+
+  ;; Use ripgrep and fd if present
+  (setq
+   consult-ripgrep-args "rg --null --line-buffered --max-columns=1000 --path-separator / --smart-case --no-heading --line-number --color=never . -e"
+   consult-fd-args "fd --color=never --hidden --follow --exclude .git ~"))
+
+;; Optional: project-scoped sources on C-x b
+(with-eval-after-load 'consult
+  (setq consult-buffer-sources
+        (list consult--source-hidden-buffer
+              consult--source-modified-buffer
+              consult--source-buffer
+              consult--source-project-buffer
+              consult--source-recent-file
+              consult--source-project-recent-file)))
+
+;; Company mode helps with in-buffer completions
+(use-package company
+  :config
+  (setq
+   ;; Set main configurations
+   company-dabbrev-other-buffers t
+   company-tooltip-minimum 10
+   company-tooltip-flip-when-above t
+   company-show-quick-access 'left
+   company-tooltip-align-annotations t
+   ;; Set delay or activate manualy
+   company-idle-delay 0
+   company-tooltip-idle-delay 3
+   company-require-match nil
+   ;; List of enabled frontends
+   company-frontends
+   '(company-pseudo-tooltip-unless-just-one-frontend-with-delay
+     company-preview-frontend
+     company-echo-metadata-frontend)
+   ;; List of enabled backends
+   company-backends '(company-capf))
+  
+  ;; Set color for the quick access
+  (custom-set-faces
+   '(company-tooltip-quick-access
+     ((t (:foreground "orange")))))
+
+  (global-set-key (kbd "C-<tab>")
+                  (lambda ()
+                    (interactive)
+                    (let ((company-tooltip-idle-delay 10))
+                      (company-complete)
+                      (and company-candidates
+                           (company-call-frontends 'post-command))))))
+
+;; Magit git porcelain withforge to handle PRs
 (setq
  auth-sources '("~/.authinfo.gpg")
  epg-pinentry-mode 'loopback)
 
-(use-package magit :defer t)
+(use-package magit
+  :config
+  (setq
+   ;; Always reuse the current window for Magit buffers
+   magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+
 (use-package forge :after magit)
 
+;; Edit ROOT and DEPTH as needed
+(setq magit-repository-directories '(("~/Projects/bp" . 2)))
+
+(defun jp/forge-pull-all (&optional root)
+  "Add to Forge if needed, then `forge-pull` for every Git repo under ROOT."
+  (interactive)
+  (let* ((root (file-name-as-directory (or root (caar magit-repository-directories))))
+         (git-dirs (directory-files-recursively root "\\`\\.git\\'" t)))
+    (dolist (g git-dirs)
+      (let ((repo (file-name-directory g)))
+        (when (file-directory-p repo)
+          (let ((default-directory repo))
+            (condition-case err
+                (progn
+                  ;; ensure repo is known to Forge, then pull topics/PRs
+                  (ignore-errors (forge-add-repository))
+                  (forge-pull)
+                  ;; optional: also update Git remotes for branches
+                  ;; (magit-fetch-all)
+                  (message "forge-pull: %s" repo))
+              (error (message "forge-pull failed in %s: %s" repo err)))))))))
+
 ;; Clojure-mode for support to .clj files and Cider for extra support
-(use-package clojure-mode :defer t)
+(use-package clojure-mode)
 (use-package cider
-  :defer t
   :config
   (setq
    ;; Check https://docs.cider.mx/cider/repl/configuration.html
@@ -221,7 +472,6 @@
 
 ;; Lsp backend protocols
 (use-package lsp-mode
-  :init (setq lsp-keymap-prefix "C-c l")
   :hook '((clojure-mode . lsp)
 	  (typescript-mode . lsp)
 	  (yaml-ts-mode . lsp)
@@ -235,90 +485,30 @@
     (add-to-list 'lsp-language-id-configuration `(,m . "clojure")))
 
   (setq
-   lsp-lens-enable nil
-   lsp-modeline-workspace-status-enable nil
+   url-show-status nil
+   url-queue-timeout 10
+   lsp-keymap-prefix "C-c l"
+   lsp-clojure-custom-server-command '("/opt/homebrew/bin/clojure-lsp")
+   lsp-completion-show-kind nil
    lsp-headerline-breadcrumb-enable nil
    lsp-modeline-code-actions-enable nil
    lsp-modeline-diagnostics-enable nil
-   lsp-completion-show-kind nil
+   lsp-modeline-workspace-status-enable nil
    lsp-enable-file-watchers t
-   lsp-ui-sideline-show-diagnostics t
    lsp-log-io nil
+   lsp-lens-enable nil
    lsp-response-timeout 1
    lsp-ui-doc-show-with-cursor t
    lsp-ui-doc-show-with-mouse nil
    lsp-ui-doc-position 'top
+   lsp-ui-sideline-show-diagnostics t
    lsp-eldoc-render-all nil
    lsp-signature-render-documentation t))
 
 (use-package consult-lsp :after lsp-mode)
 
-;; Company mode helps with in-buffer completions
-(use-package company
-  :defer t
-  :config
-  (setq
-   ;; Set main configurations
-   company-dabbrev-other-buffers t
-   company-tooltip-minimum 10
-   company-tooltip-flip-when-above t
-   company-show-quick-access 'left
-   company-tooltip-align-annotations t)
-  
-  ;; Set color for the quick access
-  (custom-set-faces
-   '(company-tooltip-quick-access
-     ((t (:foreground "orange")))))
-  
-  ;; Set delay or activate manualy
-  company-idle-delay 0
-  company-tooltip-idle-delay 10
-  company-require-match nil
-  
-  ;; List of enabled frontends
-  company-frontends
-  '(company-pseudo-tooltip-unless-just-one-frontend-with-delay
-    company-preview-frontend
-    company-echo-metadata-frontend)
-
-  ;; List of enabled backends
-  company-backends '(company-capf)
-  (global-company-mode))
-
-;; Set company keybind to activate tooltip manually
-(global-set-key (kbd "C-<tab>")
-                (lambda ()
-                  (interactive)
-                  (let ((company-tooltip-idle-delay 10))
-                    (company-complete)
-                    (and company-candidates
-                         (company-call-frontends 'post-command)))))
-
-;; Smartparens makes the pairs (), [], {}, etc. always even
-(use-package smartparens
-  :defer 0
-  :config
-  (require 'smartparens-config)
-  (smartparens-global-mode))
-
-(global-set-key (kbd "C-c <left>") 'sp-forward-slurp-sexp)
-(global-set-key (kbd "C-c <right>") 'sp-forward-barf-sexp)
-(global-set-key (kbd "C-c C-.") 'sp-backward-slurp-sexp)
-(global-set-key (kbd "C-c C-,") 'sp-backward-barf-sexp)
-
-;; MoveText helps with M-up/down line swap
-(use-package move-text :defer 0 :config (move-text-default-bindings))
-
-;; Multiple Cursors allow multi line selection for ease edition
-(use-package multiple-cursors :defer 0)
-
-(global-set-key (kbd "C->") 'mc/mark-next-like-this)
-(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
-(global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this)
-
 ;; Common lisp support with Slime
 (use-package slime
-  :defer t
   :config
   (setq
    inferior-lisp-program "/opt/homebrew/bin/sbcl"
@@ -328,34 +518,8 @@
    slime-repl-history-remove-duplicates t
    slime-net-coding-system 'utf-8-unix))
 
-;; Org mode for support to .org files
-;; (use-package org
-;;   :defer t
-;;   :commands (org-mode org-capture org-agenda)
-;;   :config
-;;   (setq
-;;    ;; Set visual references
-;;    org-hide-emphasis-markers t
-;;    org-hide-leading-stars t
-;;    org-adapt-indentation t
-;;    org-indent-indentation-per-level 2)
-
-;;   ;; Replace list hyphen with dot in org mode
-;;   (font-lock-add-keywords 'org-mode
-;;                           '(("^ *\\([-]\\) "
-;;                              (0 (prog1 ()
-;;                                   (compose-region (match-beginning 1)
-;;                                                   (match-end 1)
-;;                                                   "•")))))))
-
-;; ;; Keybindings for org
-;; (global-set-key (kbd "C-c l") #'org-store-link)
-;; (global-set-key (kbd "C-c a") #'org-agenda)
-;; (global-set-key (kbd "C-c c") #'org-capture)
-
 ;; Plantuml-mode helps versionize diagrams
 (use-package plantuml-mode
-  :defer t
   :config
   (setq org-plantuml-jar-path (expand-file-name "~/.emacs.d/plantuml.jar"))
   (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
@@ -363,56 +527,7 @@
 
 ;; Dumb Jump helps find definitions
 (use-package dumb-jump
-  :defer 0
-  :init (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
-  :config (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
-
-;; Automaticaly updates packages
-(use-package auto-package-update
-  :custom
-  (auto-package-update-interval 30)
-  (auto-package-update-prompt-before-update t)
-  (auto-package-update-hide-results t)
   :config
-  (auto-package-update-maybe)
-  (auto-package-update-at-time "09:00"))
-
-;; Log startup benchmark
-(defun echo-startup-time ()
-  (message "Emacs loaded in %s with %d garbage collections"
-	   (format "%.2f secs"
-		   (float-time
-		    (time-subtract after-init-time
-				   before-init-time)))
-	   gcs-done))
-
-(add-hook 'emacs-startup-hook #'echo-startup-time)
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(safe-local-variable-values
-   '((eval progn
-           (defun cider-send-reset nil
-             "Send commands to CIDER to restart the development environment."
-             (interactive)
-             (cider-interactive-eval "(do (ns user) (reset))"))
-           (defun cider-send-reload nil
-             "Send commands to CIDER to reload the development environment."
-             (interactive)
-             (cider-interactive-eval "(do (ns user) (reload))"))
-           (defun cider-send-reload-tests nil
-             "Send commands to CIDER to reload test namespaces."
-             (interactive)
-             (cider-interactive-eval "(do (ns user) (reload-tests))"))
-           (defun cider-send-go nil
-             "Send commands to CIDER to start the system."
-             (interactive)
-             (cider-interactive-eval "(do (ns user) (go))"))))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(company-tooltip-quick-access ((t (:foreground "orange")))))
+  (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
+  (with-eval-after-load 'xref
+    (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)))
