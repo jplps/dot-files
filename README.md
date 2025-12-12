@@ -72,9 +72,9 @@ In your home folder:
 	$ update-rc.d cron defaults
 
 ## Emacs
-### .emacs
+### early-init.el, init.el and jp.el
 
-This file is an initialization script written in lisp for emacs configurations and packages. This should be in home dir, and emacs will find it and run before initializes.
+This files are initialization scripts written in elisp for emacs's configurations and packages. These should live in .emacs.d dir, and emacs will find it and run before initializes.
 
 It contains the setup for dealing with developments in clojure (with cider), org files, plantuml and other interesting things.
 
