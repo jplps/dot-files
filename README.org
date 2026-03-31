@@ -1,0 +1,53 @@
+* Dot Files
+
+Personal configuration files for macOS — shell, editor, git, and utilities.
+
+Dot-files are hidden configuration files (prefixed with =.=) used to customize applications and environments.
+Back up and share yours — see [[https://dotfiles.github.io/][dotfiles.github.io]].
+
+** Shell (Zsh)
+
+*** .zshrc
+Main shell configuration: prompt with git branch display, nvm/node setup, Colima/Docker env, GPG, and a helper function for batch-updating git repos.
+
+*** .bash_aliases
+Legacy bash aliases from a previous Debian setup. Mostly unused on macOS.
+
+** Git
+
+*** .gitconfig
+Global git configuration: aliases (=co=, =br=, =ci=, =st=, =last=), default editor (emacs), and user identity.
+
+*** .git-update.sh
+Script to batch =git pull --all= and prune stale branches across all subdirectories in a given folder. Starts/stops =ssh-agent= for the session.
+
+** Emacs
+
+*** early-init.el
+Pre-initialization: disables =package.el= (uses =straight.el=), hides UI chrome, tunes GC for fast startup, and restores sane GC thresholds after init.
+
+*** init.el
+Main configuration: bootstraps =straight.el= + =use-package=, sets up packages for Clojure (CIDER), Org, PlantUML, completion, themes, and more.
+
+*** jp.el
+Personal elisp library loaded by =init.el=. Custom functions, keybindings, and mode tweaks.
+
+** Utilities
+
+*** .imin.sh
+Legacy Debian maintenance script (=apt-get= upgrade/update/clean cycle). Not used on macOS.
+
+*** .jobs/reboot.sh
+Cron =@reboot= script that starts a Node project via =pm2=.
+
+** Setup
+
+Symlink or copy the files you need into your home directory:
+
+#+begin_src shell
+ln -s ~/Projects/dot-files/.zshrc ~/.zshrc
+ln -s ~/Projects/dot-files/.gitconfig ~/.gitconfig
+ln -s ~/Projects/dot-files/init.el ~/.emacs.d/init.el
+ln -s ~/Projects/dot-files/early-init.el ~/.emacs.d/early-init.el
+ln -s ~/Projects/dot-files/jp.el ~/.emacs.d/jp.el
+#+end_src

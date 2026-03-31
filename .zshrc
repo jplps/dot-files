@@ -6,11 +6,8 @@ export NVM_DIR="$HOME/.nvm"
   [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
   [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
 
-# Export dynamic path with node version
-export PATH="$HOME/.nvm/versions/node/$(node -v)/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-
-# Make git update repos available in the cli
-export PATH="$PATH:$HOME"
+# Base PATH
+export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 # Export docker envs
 export DOCKER_HOST=unix:///$HOME/.colima/default/docker.sock
@@ -28,7 +25,7 @@ setopt PROMPT_SUBST ; PS1='%F{green}%n%f %F{yellow}%~%f%F{red}$(__git_ps1 " %s")
 
 function update-bp-projects() {
     if [ -d "$HOME/Projects/bp" ]; then
-        cd "$HOME/Projects/bp" || exit 1
+        cd "$HOME/Projects/bp" || return 1
         if [ -f "$HOME/.git-update.sh" ]; then
             sh .git-update.sh
         else

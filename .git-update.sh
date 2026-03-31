@@ -6,7 +6,7 @@ if ! eval "$(ssh-agent)"; then
     exit 1
 fi
 
-if ! ssh-add /Users/joao.silva/.ssh/id_ed25519; then
+if ! ssh-add "$HOME/.ssh/id_ed25519"; then
     echo "Error: Failed to add SSH key."
     exit 1
 fi
