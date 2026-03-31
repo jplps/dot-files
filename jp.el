@@ -20,7 +20,7 @@
     (find-file (or user-init-file
 		   (expand-file-name "~/.emacs")))
 
-    (let* ((w-right (split-window-right)) w-top w-bot)
+    (let* ((w-right (split-window-right)))
       (select-window w-right)
       (set-window-buffer (selected-window) (get-buffer "*Messages*"))
       (set-window-buffer (split-window-below) (get-buffer "*scratch*")))
@@ -43,7 +43,7 @@
 (defun jp/numbered-tab (tab i)
   "Enumerate tabs for easy handles"
   (propertize
-   (format (number-to-string i) (alist-get 'name tab))
+   (number-to-string i)
    'face (if (eq (car tab) 'current-tab)
 	     '(:foreground "orange")
            '(:foreground "#555"))))
@@ -54,12 +54,16 @@
   (jp/setup-initial-frame-layout)
 
   ;; ON
+  (global-hl-line-mode 1)
+  (global-auto-revert-mode 1)
   (global-display-line-numbers-mode 1)
   (column-number-mode 1)
   (which-key-mode 1)
 
-  (message "First install: ~121.8s")
-  (message "Init time: %s | GC: %d" (emacs-init-time) gcs-done))
+  (message "Init: %s | GC: %d | ~%.1f MB consed"
+           (emacs-init-time)
+           gcs-done
+           (/ (* (float cons-cells-consed) 16) 1024 1024)))
 
 (defun jp/apply-faces ()
   "Used to apply faces after loading main theme"
@@ -69,6 +73,8 @@
    '(default ((t (:background "#000" :height 115))))
    '(fringe  ((t (:background "#222"))))
    '(cursor  ((t (:background "#aaa"))))
+   ;; current line
+   '(hl-line ((t (:background "#1e1e1e"))))
    ;; minibuffer
    '(minibuffer-prompt ((t (:foreground "orange"))))
    ;; highlights
@@ -82,45 +88,7 @@
    '(font-lock-comment-face ((t (:foreground "#555"))))
    ;; mode-line
    '(mode-line ((t (:background "#222" :box (:line-width 2 :color "#222")))))
-   '(mode-line-inactive ((t (:foreground "#555" :background "#222" :box (:line-width 2 :color "#222")))))
-   ;; ivy results
-   '(ivy-current-match ((t (:background unspecified :foreground "orange" :weight bold))))
-
-   '(ivy-minibuffer-match-face-1 ((t (:foreground "orange" :weight bold))))
-   '(ivy-minibuffer-match-face-2 ((t (:foreground "orange" :weight bold))))
-   '(ivy-minibuffer-match-face-3 ((t (:foreground "orange" :weight bold))))
-   '(ivy-minibuffer-match-face-4 ((t (:foreground "orange" :weight bold))))
-   '(ivy-minibuffer-match-highlight ((t (:foreground "orange" :weight bold))))
-   '(ivy-highlight-face ((t (:foreground "orange" :weight bold))))
-
-   '(ivy-subdir ((t (:foreground "#aaa"))))
-   '(ivy-completions-annotations ((t (:foreground "#aaa"))))
-   '(ivy-modified-buffer ((t (:foreground "#aaa"))))
-   '(ivy-modified-outside-buffer ((t (:foreground "#aaa"))))
-   '(ivy-org ((t (:foreground "#aaa"))))
-   '(ivy-prompt-match ((t (:foreground "#aaa"))))
-   '(ivy-virtual ((t (:foreground "#aaa" :slant italic))))
-   '(ivy-remote ((t (:foreground "#aaa"))))
-   '(ivy-separator ((t (:foreground "#aaa"))))
-   '(ivy-confirm-face ((t (:foreground "#aaa"))))
-   '(ivy-match-required-face ((t (:foreground "#aaa"))))
-   '(ivy-subdir ((t (:foreground "#aaa")))) '(ivy-action ((t (:foreground "#aaa"))))
-
-   ;; swiper
-   '(swiper-line-face ((t (:background unspecified :foreground "orange" :weight bold))))
-   '(swiper-match-face-1 ((t (:foreground "orange" :weight bold))))
-   '(swiper-match-face-2 ((t (:foreground "orange" :weight bold))))
-   '(swiper-match-face-3 ((t (:foreground "orange" :weight bold))))
-   '(swiper-match-face-4 ((t (:foreground "orange" :weight bold))))
-   '(swiper-isearch-match-face-1 ((t (:foreground "orange" :weight bold))))
-   '(swiper-isearch-match-face-2 ((t (:foreground "orange" :weight bold))))
-   '(swiper-isearch-match-face-3 ((t (:foreground "orange" :weight bold))))
-   '(swiper-isearch-match-face-4 ((t (:foreground "orange" :weight bold))))
-
-   '(swiper-background-match-face-1 ((t (:foreground "#aaa"))))
-   '(swiper-background-match-face-2 ((t (:foreground "#aaa"))))
-   '(swiper-background-match-face-3 ((t (:foreground "#aaa"))))
-   '(swiper-background-match-face-4 ((t (:foreground "#aaa"))))))
+   '(mode-line-inactive ((t (:foreground "#555" :background "#222" :box (:line-width 2 :color "#222")))))))
 
 ;; Global text scaling (named commands)
 (defvar jp/base-height (face-attribute 'default :height))
@@ -133,19 +101,32 @@
                       (t (* n 10)))))
     (set-face-attribute 'default nil :height (+ cur delta))))
 
+(defvar-local jp--cached-branch 'unset)
+
 (defun jp/current-branch ()
-  "Git branch resolver"
-  (or (when buffer-file-name
-        (ignore-errors (vc-working-branch buffer-file-name)))
-      (when (and (executable-find "git")
-                 (eq (vc-backend (or buffer-file-name
-				     default-directory))
-		     'Git))
-        (with-temp-buffer
-          (let ((default-directory (or (vc-root-dir)
-				       default-directory)))
-            (when (eq 0 (call-process "git" nil t nil "symbolic-ref" "--short" "-q" "HEAD"))
-              (string-trim (buffer-string))))))))
+  "Git branch resolver with per-buffer cache."
+  (when (eq jp--cached-branch 'unset)
+    (setq jp--cached-branch
+          (or (when buffer-file-name
+                (ignore-errors (vc-working-branch buffer-file-name)))
+              (when (and (executable-find "git")
+                         (eq (vc-backend (or buffer-file-name
+                                             default-directory))
+                             'Git))
+                (with-temp-buffer
+                  (let ((default-directory (or (vc-root-dir)
+                                               default-directory)))
+                    (when (eq 0 (call-process "git" nil t nil
+                                              "symbolic-ref" "--short" "-q" "HEAD"))
+                      (string-trim (buffer-string)))))))))
+  jp--cached-branch)
+
+(defun jp/invalidate-branch-cache ()
+  (setq jp--cached-branch 'unset))
+
+(add-hook 'after-save-hook #'jp/invalidate-branch-cache)
+(add-hook 'find-file-hook #'jp/invalidate-branch-cache)
+(add-hook 'after-revert-hook #'jp/invalidate-branch-cache)
 
 ;; Map windows by number
 (defvar jp--window-number-map nil)
@@ -207,22 +188,35 @@
          (git-dirs (directory-files-recursively root "\\`\\.git\\'" t)))
     (dolist (g git-dirs)
       (let ((repo (file-name-directory g)))
-        (when (file-directory-p repo)
+        (when (and (file-directory-p g) (file-directory-p repo))
           (let ((default-directory repo))
             (condition-case err
                 (progn
-                  ;; ensure repo is known to Forge, then pull topics/PRs
                   (ignore-errors (forge-add-repository))
                   (forge-pull)
-                  ;; optional: also update Git remotes for branches
-                  ;; (magit-fetch-all)
+                  (magit-fetch-all)
                   (message "forge-pull: %s" repo))
               (error (message "forge-pull failed in %s: %s" repo err)))))))))
 
 (defun jp/company-complete-once ()
     (interactive)
-    (let ((company-tooltip-idle-delay 3))
-      (company-complete)
-      (when (and (bound-and-true-p company-candidates)
-                 company-candidates)
-        (company-call-frontends 'post-command))))
+    (company-complete)
+    (when (and (bound-and-true-p company-candidates)
+               company-candidates)
+      (company-call-frontends 'post-command)))
+
+(defun jp/sync-all-bp-projects ()
+  "Sync all git projects in ~/Projects/bp, pruning and pulling."
+  (interactive)
+  (let ((base-dir "~/Projects/bp"))
+    (if (file-directory-p base-dir)
+        (let ((repos (directory-files base-dir t "^[^.]")))
+          (dolist (repo repos)
+            (when (file-directory-p (expand-file-name ".git" repo))
+              (message "Syncing %s..." repo)
+              (let ((default-directory repo))
+                (magit-call-git "fetch" "--prune" "--all")
+                (magit-call-git "pull" "--all")
+                (magit-call-git "remote" "prune" "origin"))))
+          (message "All projects updated!"))
+      (message "Directory %s not found." base-dir))))

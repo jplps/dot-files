@@ -1,3 +1,4 @@
+;; Load my custom fns
 (load (expand-file-name "jp.el" user-emacs-directory))
 
 ;; Full height emacs with minimal width
@@ -7,7 +8,6 @@
             (set-frame-size nil 256 (floor (/ (display-pixel-height)
 					      (frame-char-height))))))
 
-;; Prepare init stuff
 (setq
  ;; Compilation and warnings
  byte-compile-warnings '(not obsolete)
@@ -20,6 +20,7 @@
  auto-revert-avoid-polling t
  auto-revert-interval 5
  auto-revert-check-vc-info t
+ global-auto-revert-non-file-buffers t
  ;; Indentation defaults
  indent-tabs-mode nil
  js-indent-level 2
@@ -52,6 +53,10 @@
 (add-hook 'window-configuration-change-hook #'jp/renumber-windows)
 (add-hook 'buffer-list-update-hook #'jp/renumber-windows)
 
+;; Cycle buffers inside window
+(global-set-key (kbd "M-[") #'previous-buffer)
+(global-set-key (kbd "M-]") #'next-buffer)
+
 ;; Control where the result goes
 (global-set-key (kbd "C-c w") #'jp/with-output-to-window)
 
@@ -69,8 +74,8 @@
    (:eval mode-name)
    (:eval (let ((branch (jp/current-branch)))
             (when branch
-              (concat " " (propertize (format " %s" branch)
-                                      'face '(:foreground "#ccc"))))))))
+              (propertize (format " %s" branch)
+                          'face '(:foreground "#ccc")))))))
 
 (add-hook 'after-save-hook #'force-mode-line-update)
 
@@ -119,21 +124,23 @@
 ;; No-littering dump emacs's autofiles where you want
 (use-package no-littering
   :init
-  (setq auto-save-file-name-transforms
-        `((".*" ,(no-littering-expand-var-file-name "~/.emacs.d/var/auto-save/") t))
-        backup-directory-alist
-        `((".*" . ,(no-littering-expand-var-file-name "~/.emacs.d/var/backup/")))))
+  (setq
+   auto-save-file-name-transforms
+   `((".*" ,(no-littering-expand-var-file-name "auto-save/") t))
+   backup-directory-alist
+   `((".*" . ,(no-littering-expand-var-file-name "backup/")))))
 
 ;; macOS GUI only
 (use-package exec-path-from-shell
   :if (memq window-system '(mac ns))
   :init
-  (setq exec-path-from-shell-arguments '()
-        exec-path-from-shell-check-startup-files nil
-        exec-path-from-shell-quiet t)
+  (setq
+   exec-path-from-shell-arguments '()
+   exec-path-from-shell-check-startup-files nil
+   exec-path-from-shell-quiet t)
 
   (exec-path-from-shell-copy-envs
-   '("PATH" "NVM_DIR" "DOCKER_HOST" "TESTCONTAINERS_RYUK_DISABLED")))
+   '("PATH" "NVM_DIR" "DOCKER_HOST" "TESTCONTAINERS_RYUK_DISABLED" "SENDGRID_API_KEY")))
 
 ;; Smartparens makes the pairs (), [], {}, etc. always even
 (use-package smartparens
@@ -170,35 +177,33 @@
   :demand t
   :init
   (setq
-   ;; Show index (current/total) in the minibuffer
    ivy-count-format "%d/%d "
    ivy-use-selectable-prompt t
    ivy-use-virtual-buffers t
-   ivy-wrap nil
    ivy-extra-directories nil
-
-   ;; Use fuzzy matching where it makes sense
    ivy-re-builders-alist
    '((swiper-isearch . ivy--regex-plus)
      (counsel-rg . ivy--regex-plus)
-     (t . ivy--regex-fuzzy)))
+     (t . ivy--regex-plus)))
   :config
-  (ivy-mode 1))
+  (ivy-mode 1)
+  (define-key ivy-minibuffer-map [mouse-1] nil)
+  (define-key ivy-minibuffer-map [mouse-3] nil)
+  (define-key ivy-minibuffer-map [down-mouse-1] nil))
 
 ;; Configure Counsel as Ivy-powered replacements for core commands
 (use-package counsel
   :after ivy
   :init (setq counsel-mode-override-describe-bindings t)
+  :bind (("M-x" . counsel-M-x)
+         ("C-x C-f" . counsel-find-file)
+         ("C-h f" . counsel-describe-function)
+         ("C-h v" . counsel-describe-variable)
+         ("C-h b" . counsel-descbinds)
+         ("C-x b" . ivy-switch-buffer)
+         ("C-c s r" . counsel-rg))
   :config
-  (counsel-mode 1)
-  ;; Use Counsel for common global bindings
-  (global-set-key (kbd "M-x")     #'counsel-M-x)
-  (global-set-key (kbd "C-x C-f") #'counsel-find-file)
-  (global-set-key (kbd "C-h f")   #'counsel-describe-function)
-  (global-set-key (kbd "C-h v")   #'counsel-describe-variable)
-  (global-set-key (kbd "C-h b")   #'counsel-descbinds)
-  (global-set-key (kbd "C-x b")   #'ivy-switch-buffer)
-  (global-set-key (kbd "C-c s r") #'counsel-rg))
+  (counsel-mode 1))
 
 ;; Use Swiper for in-buffer incremental searching
 (use-package swiper
@@ -236,33 +241,30 @@
 (use-package counsel-projectile
   :after (counsel projectile)
   :init (setq counsel-projectile-sort-files t)
+  :bind (:map projectile-mode-map
+         ("C-c p p" . counsel-projectile-switch-project)
+         ("C-c p f" . counsel-projectile-find-file)
+         ("C-c p s r" . counsel-projectile-rg)
+         ("C-c p b" . counsel-projectile-switch-to-buffer))
   :config
-  (counsel-projectile-mode 1)
-  ;; Main project entrypoints
-  (define-key projectile-mode-map (kbd "C-c p p") #'counsel-projectile-switch-project)
-  (define-key projectile-mode-map (kbd "C-c p f") #'counsel-projectile-find-file)
-  (define-key projectile-mode-map (kbd "C-c p s r") #'counsel-projectile-rg)
-  (define-key projectile-mode-map (kbd "C-c p b") #'counsel-projectile-switch-to-buffer))
+  (counsel-projectile-mode 1))
 
 ;; Company mode helps with in-buffer completions
 (use-package company
   :bind (("C-<tab>" . jp/company-complete-once))
-  :init (jp/company-complete-once)
+  :custom
+  (company-dabbrev-other-buffers t)
+  (company-tooltip-minimum 10)
+  (company-tooltip-flip-when-above t)
+  (company-show-quick-access 'left)
+  (company-tooltip-align-annotations t)
+  (company-idle-delay 0)
+  (company-tooltip-idle-delay 3)
+  (company-require-match nil)
+  (company-frontends '(company-pseudo-tooltip-unless-just-one-frontend-with-delay
+                       company-echo-metadata-frontend))
+  (company-backends '(company-capf))
   :config
-  (setq
-   company-dabbrev-other-buffers t
-   company-tooltip-minimum 10
-   company-tooltip-flip-when-above t
-   company-show-quick-access 'left
-   company-tooltip-align-annotations t
-   company-idle-delay 0
-   company-tooltip-idle-delay 3
-   company-require-match nil
-   company-frontends
-   '(company-pseudo-tooltip-unless-just-one-frontend-with-delay
-     company-echo-metadata-frontend)
-   company-backends '(company-capf))
-
   (custom-set-faces
    '(company-tooltip-quick-access
      ((t (:foreground "orange"))))))
@@ -279,10 +281,10 @@
 
 (use-package forge :after magit)
 
-;; Clojure-mode for support to .clj files and Cider for extra support
-(use-package clojure-mode
-  :mode ("\\.clj[csx]?\\'" . clojure-mode))
+;; Clojure-mode for support to .clj files
+(use-package clojure-mode :mode ("\\.clj[csx]?\\'" . clojure-mode))
 
+;; Cider for extra support
 (use-package cider
   :after clojure-mode
   :commands (cider-jack-in cider-connect cider-connect-clj cider-connect-cljs)
@@ -292,7 +294,7 @@
    cider-repl-print-help nil
    cider-repl-pop-to-buffer-on-connect nil
    cider-repl-display-in-current-window t
-   cider-jack-in-dependencies '(("com.github.flow-storm/flow-storm-dbg" "3.15.5"))))
+   cider-jack-in-dependencies '(("com.github.flow-storm/flow-storm-dbg" "4.5.9"))))
 
 ;; Lsp backend protocols
 (use-package lsp-mode
@@ -318,6 +320,8 @@
    lsp-enable-file-watchers t
    lsp-log-io nil
    lsp-lens-enable nil
+   lsp-enable-indentation nil
+   lsp-enable-on-type-formatting nil
    lsp-response-timeout 1
    lsp-ui-doc-show-with-cursor t
    lsp-ui-doc-show-with-mouse nil
@@ -327,24 +331,28 @@
    lsp-signature-render-documentation t))
 
 ;; Common lisp support with Slime
-(use-package slime
-  :commands (slime slime-connect)
-  :init
-  (setq
-   inferior-lisp-program "/opt/homebrew/bin/sbcl"
-   slime-contribs '(slime-fancy)
-   slime-repl-history-file "~/.emacs.d/slime-history.eld"
-   slime-repl-history-size 1000
-   slime-repl-history-remove-duplicates t
-   slime-net-coding-system 'utf-8-unix))
+;; (use-package slime
+;;   :commands (slime slime-connect)
+;;   :init
+;;   (setq
+;;    inferior-lisp-program "/opt/homebrew/bin/sbcl"
+;;    slime-contribs '(slime-fancy)
+;;    slime-repl-history-file "~/.emacs.d/slime-history.eld"
+;;    slime-repl-history-size 1000
+;;    slime-repl-history-remove-duplicates t
+;;    slime-net-coding-system 'utf-8-unix))
 
 ;; Plantuml-mode helps versionize diagrams
-(use-package plantuml-mode
-  :mode ("\\.plantuml\\'" "\\.puml\\'")
-  :init
-  (setq org-plantuml-jar-path (expand-file-name "~/.emacs.d/plantuml.jar"))
-  :config
-  (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((plantuml . t))))
+;; (use-package plantuml-mode
+;;   :mode ("\\.plantuml\\'" "\\.puml\\'")
+;;   :init
+;;   (setq org-plantuml-jar-path (expand-file-name "~/.emacs.d/plantuml.jar"))
+;;   :config
+;;   (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
+;;   (org-babel-do-load-languages
+;;    'org-babel-load-languages
+;;    '((plantuml . t))))
+
+;; Keep Custom's auto-generated code out of init.el
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(when (file-exists-p custom-file) (load custom-file))
